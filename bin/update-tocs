@@ -236,7 +236,7 @@ def process_page(filename):
     lines = strip_old_toc(lines)
 
     if not has_toc(lines):
-        print(f"Skipping {filename}: no TOC placeholder found.")
+        # print(f"Skipping {filename}: no TOC placeholder found.")
         return
 
     toc = get_toc(lines)
