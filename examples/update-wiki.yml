@@ -3,6 +3,9 @@
 #
 # The script should be in the `bin` directory at the root of your wiki repository,
 # please use `git` from CLI to add it.
+#
+# Note that you might need to go to your repository settings and enable using all actions,
+# not only from your ogranization, if you are using a private repository in an organization.
 
 name: Update wiki pages
 
