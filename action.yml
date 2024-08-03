@@ -1,4 +1,4 @@
-name: "Automate wiki page maintenance"
+name: "Automate GitHub Wiki page maintenance"
 description: "Add tables of contents to Markdown wiki pages."
 author: Justin Forest <hex@umonkey.net>
 
