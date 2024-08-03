@@ -8,13 +8,13 @@
 # Designed for use with GitHub Actions, for adding what the GitHub wiki is missing.
 #
 # Usage:
-# bin/update-tocs-alt wiki/*.md
+# bin/update-tocs wiki/*.md
 #
 # To use a custom header:
-# WIKI_TOC_HEADER="**Contents:**" bin/update-tocs-alt wiki/*.md
+# WIKI_TOC_HEADER="**Contents:**" bin/update-tocs wiki/*.md
 #
 # To run tests:
-# bin/update-tocs-alt test
+# bin/update-tocs test
 #
 # Author: Justin Forest <hex@umonkey.net>
 
