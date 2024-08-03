@@ -1,0 +1,21 @@
+name: "Automate wiki page maintenance"
+description: "Add tables of contents to Markdown wiki pages."
+author: Justin Forest <hex@umonkey.net>
+
+inputs:
+  path:
+    description: "The folder where the wiki repository files are."
+    required: true
+  update_tocs:
+    description: "Update existing tables of contents."
+    required: false
+    default: true
+
+  runs:
+    using: "composite"
+    steps:
+      - name: "Update tables of contents"
+        run: |
+          python3 bin/update-tocs $INPUT_PATH/*.md
+        env:
+          INPUT_PATH: ${{ inputs.path }}
