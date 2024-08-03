@@ -17,5 +17,6 @@ runs:
     - name: "Update tables of contents"
       run: |
         python3 bin/update-tocs $INPUT_PATH/*.md
+      shell: bash
       env:
         INPUT_PATH: ${{ inputs.path }}
