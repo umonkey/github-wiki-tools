@@ -1,0 +1,30 @@
+# This is an example of a workflow file that updates wiki pages.
+# You put this file in the .github/workflows directory of your repository.
+#
+# The script should be in the `bin` directory at the root of your wiki repository,
+# please use `git` from CLI to add it.
+
+name: Update wiki pages
+
+on:
+  # This means that the workflow runs on all wiki updates.
+  gollum:
+  # This lets you run the workflow manually from the Actions tab.
+  workflow_dispatch:
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout wiki
+        uses: actions/checkout@v4
+        with:
+          repository: ${{github.repository}}.wiki
+
+      - name: Update tables of contents
+        run: bin/update-tocs *.md
+
+      - name: Commit changes
+        uses: stefanzweifel/git-auto-commit-action@v4
+        with:
+          commit_message: Github Actions - Wiki helpers

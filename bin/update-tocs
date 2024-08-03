@@ -1,0 +1,280 @@
+#!/usr/bin/env python3
+#
+# Markdown table of contents generator.
+#
+# Reads the specified files, builds a TOC from the headings, embeds into the page
+# using placeholder `__TOC__`.
+#
+# Designed for use with GitHub Actions, for adding what the GitHub wiki is missing.
+#
+# Usage:
+# bin/update-tocs-alt wiki/*.md
+#
+# To use a custom header:
+# WIKI_TOC_HEADER="**Contents:**" bin/update-tocs-alt wiki/*.md
+#
+# To run tests:
+# bin/update-tocs-alt test
+#
+# Author: Justin Forest <hex@umonkey.net>
+
+import os
+import re
+import sys
+
+
+def get_lines(filename):
+    with open(filename, "r") as f:
+        return f.readlines()
+
+
+def get_header():
+    return os.getenv("WIKI_TOC_HEADER") or "**Table of Contents:**"
+
+
+def normalize_toc_levels(toc):
+    minlevel = min([level for level, _ in toc])
+    return [(level - minlevel + 1, title) for level, title in toc]
+
+
+def test_normalize_toc_levels():
+    toc = [
+        (2, "foo"),
+        (3, "bar"),
+        (4, "baz"),
+    ]
+
+    assert normalize_toc_levels(toc) == [
+        (1, "foo"),
+        (2, "bar"),
+        (3, "baz"),
+    ]
+
+
+def get_toc(lines):
+    toc = []
+
+    for line in lines:
+        m = re.match(r"^([#]+)\s+(.+)", line)
+
+        if m is not None:
+            level = len(m.group(1))
+            title = m.group(2).strip()
+
+            toc.append((level, title))
+
+    toc = normalize_toc_levels(toc)
+
+    return toc
+
+
+def test_get_toc():
+    toc = get_toc([
+        "hello, world\n",
+        "# foo\n",
+        "## bar\n",
+        "it works!\n",
+    ])
+
+    assert toc == [(1, "foo"), (2, "bar")]
+
+
+def get_toc_link(title):
+    return f"{title.lower().replace(' ', '-')}"
+
+
+def test_get_toc_link():
+    assert get_toc_link("Hello, World") == "hello,-world"
+    assert get_toc_link("Главная Страница") == "главная-страница"
+
+
+def render_toc(toc):
+    lines = []
+    header = get_header()
+
+    lines.append("<!-- toc:start -->\n")
+    lines.append("<!-- This block is updated automatically, please do not change manually. Your changes will be lost. -->\n")
+    lines.append("\n")
+    lines.append(f"{header}\n")
+    lines.append("\n")
+
+    for (level, title) in toc:
+        ref = get_toc_link(title)
+        padding = '    ' * (level - 1)
+        lines.append(f"{padding}- [{title}](#{ref})\n")
+
+    lines.append("\n")
+    lines.append("<!-- toc:end -->\n")
+
+    return lines
+
+
+def test_render_toc():
+    toc = [
+        (1, "foo"),
+        (2, "bar"),
+    ]
+
+    lines = render_toc(toc)
+
+    assert lines == [
+        "- [foo](#foo)\n",
+        "    - [bar](#bar)\n",
+    ]
+
+
+def strip_old_toc(lines):
+    """
+    Replace the old TOC with a placeholder.
+    """
+
+    new_lines = []
+    skip = False
+
+    for line in lines:
+        if line == "<!-- toc:start -->\n":
+            new_lines.append("__TOC__\n")
+            skip = True
+            continue
+
+        if line == "<!-- toc:end -->\n":
+            skip = False
+            continue
+
+        if skip:
+            continue
+
+        new_lines.append(line)
+
+    return new_lines
+
+
+def test_strip_old_toc():
+    res = strip_old_toc([
+        "hello, world\n",
+        "<!-- toc:start -->\n",
+        "old TOC\n",
+        "<!-- toc:end -->\n",
+        "it works!\n",
+    ])
+
+    assert res == [
+        "hello, world\n",
+        "__TOC__\n",
+        "it works!\n",
+    ]
+
+    res = strip_old_toc([
+        "hello, world\n",
+        "goodbye, world\n",
+    ])
+
+    assert res == [
+        "hello, world\n",
+        "goodbye, world\n",
+    ]
+
+
+def has_toc(lines):
+    return "__TOC__\n" in set(lines)
+
+
+def test_has_toc():
+    assert True == has_toc(["foo\n", "__TOC__\n"])
+    assert False == has_toc(["foo\n", "bar\n"])
+
+
+def inject_toc(lines, toc):
+    try:
+        index = lines.index("__TOC__\n")
+        lines[index] = "".join(toc)
+        return lines
+    except ValueError:
+        return lines
+
+
+def test_inject_toc_success():
+    lines = [
+        "hello, world\n",
+        "__TOC__\n",
+        "goodbye, world\n",
+    ]
+
+    toc = [
+        "it works!\n",
+    ]
+
+    res = inject_toc(lines, toc)
+
+    assert res == [
+        "hello, world\n",
+        "it works!\n",
+        "goodbye, world\n",
+    ]
+
+
+def test_inject_toc_no_placeholder():
+    lines = [
+        "hello, world\n",
+        "goodbye, world\n",
+    ]
+
+    toc = [
+        "it works!\n",
+    ]
+
+    res = inject_toc(lines, toc)
+
+    assert res == [
+        "hello, world\n",
+        "goodbye, world\n",
+    ]
+
+
+def process_page(filename):
+    lines = get_lines(filename)
+    lines = strip_old_toc(lines)
+
+    if not has_toc(lines):
+        print(f"Skipping {filename}: no TOC placeholder found.")
+        return
+
+    toc = get_toc(lines)
+    rendered_toc = render_toc(toc)
+
+    lines = inject_toc(lines, rendered_toc)
+
+    with open(filename, "w") as f:
+        f.writelines(lines)
+
+    print(f"Updated TOC in {filename}.")
+
+
+def run_tests():
+    module = sys.modules['__main__']
+
+    for name in sorted(dir(module)):
+        if name.startswith("test_"):
+            func = getattr(module, name)
+
+            print(f"Running test: {name}")
+            func()
+
+    print("All tests passed.")
+
+
+def main(prog, *args):
+    if not args:
+        print(f"Usage: {prog} <file> [<file> ...]")
+        sys.exit(1)
+
+    if list(args) == ["test"]:
+        run_tests()
+        return
+
+    for filename in args:
+        process_page(filename)
+
+
+if __name__ == "__main__":
+    main(*sys.argv)
