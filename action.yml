@@ -16,7 +16,8 @@ runs:
   steps:
     - name: "Update tables of contents"
       run: |
-        python3 bin/update-tocs $INPUT_PATH/*.md
+        python3 $ACTION_PATH/bin/update-tocs $INPUT_PATH/*.md
       shell: bash
       env:
         INPUT_PATH: ${{ inputs.path }}
+        ACTION_PATH: ${{ github.action_path }}
