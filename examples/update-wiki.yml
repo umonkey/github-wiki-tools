@@ -27,7 +27,7 @@ jobs:
           path: wiki
 
       - name: Update tables of contents
-        uses: umonkey/github-wiki-tools@main
+        uses: umonkey/github-wiki-tools@v1
         with:
           path: wiki
 
