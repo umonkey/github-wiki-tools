@@ -35,7 +35,7 @@ Some text.
 
 Those new placeholders will be replaced with the actual TOC when the script is run next time.
 
-See [this example](main/examples/update-wiki.yml) for details on how to set up GitHub actions.
+See [this example](examples/update-wiki.yml) for details on how to set up GitHub actions.
 
 
 [1]: https://docs.github.com/en/communities/documenting-your-project-with-wikis/about-wikis
