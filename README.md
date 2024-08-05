@@ -44,3 +44,34 @@ See [this example](examples/update-wiki.yml) for details on how to set up GitHub
 
 [1]: https://docs.github.com/en/communities/documenting-your-project-with-wikis/about-wikis
 [2]: https://github.com/features/actions
+
+
+## Using automated backlinks
+
+To embed backlinks in a wiki page, use the following syntax:
+
+```markdown
+Some text.
+
+__BACKLINKS__
+
+Some more text.
+```
+
+When you run the script, it will replace the `__BACKLINKS__` marker with a list of linked pages, like this:
+
+```markdown
+Some text.
+
+<!-- backlinks:start -->
+<!-- some more comments -->
+
+## Pages that link here
+
+- [[Page 1]]
+- [[Page 2]]
+
+<!-- backlinks:end -->
+```
+
+Those new placeholders will be replaced with the actual list of backlinks when the script is run next time.
