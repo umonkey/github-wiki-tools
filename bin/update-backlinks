@@ -60,8 +60,8 @@ def test_render_backlinks():
         "\n",
         "## Backlinks\n",
         "\n",
-        "- [[foo]]\n",
         "- [[bar]]\n",
+        "- [[foo]]\n",
         "\n",
         "<!-- backlinks:end -->\n",
     ]
@@ -197,7 +197,7 @@ def process_page(filename, links):
         # print(f"Skipping {filename}: no backlinks placeholder found.")
         return
 
-    links = sorted(links, key=lambda s: s.lower()))
+    links = sorted(links, key=lambda s: s.lower())
 
     block = render_backlinks(links)
     lines = inject_backlinks(lines, block)

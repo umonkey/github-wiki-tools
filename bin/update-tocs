@@ -118,8 +118,15 @@ def test_render_toc():
     lines = render_toc(toc)
 
     assert lines == [
+        "<!-- toc:start -->\n",
+        "<!-- This block is updated automatically, please do not change manually. Your changes will be lost. -->\n",
+        "\n",
+        "**Table of Contents:**\n",
+        "\n",
         "- [foo](#foo)\n",
         "    - [bar](#bar)\n",
+        "\n",
+        "<!-- toc:end -->\n",
     ]
 
 
