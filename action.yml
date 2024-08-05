@@ -22,17 +22,17 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - name: "Update tables of contents"
+    - name: "Update backlinks"
       run: |
-        python3 $ACTION_PATH/bin/update-tocs $INPUT_PATH/*.md
+        python3 $ACTION_PATH/bin/update-backlinks $INPUT_PATH/*.md
       shell: bash
       env:
         INPUT_PATH: ${{ inputs.path }}
         ACTION_PATH: ${{ github.action_path }}
 
-    - name: "Update backlinks"
+    - name: "Update tables of contents"
       run: |
-        python3 $ACTION_PATH/bin/update-backlinks $INPUT_PATH/*.md
+        python3 $ACTION_PATH/bin/update-tocs $INPUT_PATH/*.md
       shell: bash
       env:
         INPUT_PATH: ${{ inputs.path }}
