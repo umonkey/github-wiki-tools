@@ -14,6 +14,10 @@ inputs:
     description: "Update existing tables of contents."
     required: false
     default: true
+  update_backlinks:
+    description: "Update existing backlinks."
+    required: false
+    default: true
 
 runs:
   using: "composite"
@@ -21,6 +25,14 @@ runs:
     - name: "Update tables of contents"
       run: |
         python3 $ACTION_PATH/bin/update-tocs $INPUT_PATH/*.md
+      shell: bash
+      env:
+        INPUT_PATH: ${{ inputs.path }}
+        ACTION_PATH: ${{ github.action_path }}
+
+    - name: "Update backlinks"
+      run: |
+        python3 $ACTION_PATH/bin/update-backlinks $INPUT_PATH/*.md
       shell: bash
       env:
         INPUT_PATH: ${{ inputs.path }}

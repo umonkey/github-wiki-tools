@@ -1,0 +1,255 @@
+#!/usr/bin/env python3
+#
+# Markdown backlinks generator.
+#
+# Reads the specified files, builds a list of from other pages, embeds into the page
+# using placeholder `__BACKLINKS__`.
+#
+# Designed for use with GitHub Actions, for adding what the GitHub wiki is missing.
+#
+# Usage:
+# bin/update-backlinks wiki/*.md
+#
+# To use a custom header:
+# WIKI_BACKLINKS_HEADER="## Pages that link here" bin/update-backlinks wiki/*.md
+#
+# To run tests:
+# bin/update-backlinks test
+#
+# Author: Justin Forest <hex@umonkey.net>
+
+import os
+import re
+import sys
+
+
+def get_lines(filename):
+    with open(filename, "r") as f:
+        return f.readlines()
+
+
+def get_header():
+    return os.getenv("WIKI_BACKLINKS_HEADER") or "## Backlinks"
+
+
+def render_backlinks(links):
+    lines = []
+    header = get_header()
+
+    lines.append("<!-- backlinks:start -->\n")
+    lines.append("<!-- This block is updated automatically, please do not change manually. Your changes will be lost. -->\n")
+    lines.append("\n")
+    lines.append(f"{header}\n")
+    lines.append("\n")
+
+    for link in links:
+        lines.append(f"- [[{link}]]\n")
+
+    lines.append("\n")
+    lines.append("<!-- backlinks:end -->\n")
+
+    return lines
+
+
+def test_render_backlinks():
+    lines = render_backlinks(set(["foo", "bar"]))
+
+    assert lines == [
+        "<!-- backlinks:start -->\n",
+        "<!-- This block is updated automatically, please do not change manually. Your changes will be lost. -->\n",
+        "\n",
+        "## Backlinks\n",
+        "\n",
+        "- [[foo]]\n",
+        "- [[bar]]\n",
+        "\n",
+        "<!-- backlinks:end -->\n",
+    ]
+
+
+def strip_old_block(lines):
+    """
+    Replace the old block with a placeholder.
+    """
+
+    new_lines = []
+    skip = False
+
+    for line in lines:
+        if line == "<!-- backlinks:start -->\n":
+            new_lines.append("__BACKLINKS__\n")
+            skip = True
+            continue
+
+        if line == "<!-- backlinks:end -->\n":
+            skip = False
+            continue
+
+        if skip:
+            continue
+
+        new_lines.append(line)
+
+    return new_lines
+
+
+def test_strip_old_block():
+    res = strip_old_block([
+        "hello, world\n",
+        "<!-- backlinks:start -->\n",
+        "old backlinks\n",
+        "<!-- backlinks:end -->\n",
+        "it works!\n",
+    ])
+
+    assert res == [
+        "hello, world\n",
+        "__BACKLINKS__\n",
+        "it works!\n",
+    ]
+
+    res = strip_old_block([
+        "hello, world\n",
+        "goodbye, world\n",
+    ])
+
+    assert res == [
+        "hello, world\n",
+        "goodbye, world\n",
+    ]
+
+
+def has_placeholder(lines):
+    return "__BACKLINKS__\n" in set(lines)
+
+
+def test_has_placeholder():
+    assert True == has_placeholder(["foo\n", "__BACKLINKS__\n"])
+    assert False == has_placeholder(["foo\n", "bar\n"])
+
+
+def inject_backlinks(lines, parts):
+    try:
+        index = lines.index("__BACKLINKS__\n")
+        lines[index] = "".join(parts)
+        return lines
+    except ValueError:
+        return lines
+
+
+def test_inject_backlinks_success():
+    lines = [
+        "hello, world\n",
+        "__BACKLINKS__\n",
+        "goodbye, world\n",
+    ]
+
+    res = [
+        "it works!\n",
+    ]
+
+    res = inject_backlinks(lines, res)
+
+    assert res == [
+        "hello, world\n",
+        "it works!\n",
+        "goodbye, world\n",
+    ]
+
+
+def test_inject_backlinks_no_placeholder():
+    lines = [
+        "hello, world\n",
+        "goodbye, world\n",
+    ]
+
+    res = [
+        "it works!\n",
+    ]
+
+    res = inject_backlinks(lines, res)
+
+    assert res == [
+        "hello, world\n",
+        "goodbye, world\n",
+    ]
+
+
+def process_page(filename, links):
+    lines = get_lines(filename)
+    lines = strip_old_block(lines)
+
+    if not has_placeholder(lines):
+        # print(f"Skipping {filename}: no backlinks placeholder found.")
+        return
+
+    block = render_backlinks(links)
+    lines = inject_backlinks(lines, block)
+
+    with open(filename, "w") as f:
+        f.writelines(lines)
+
+    print(f"Updated backlinks in {filename}.")
+
+
+def run_tests():
+    module = sys.modules['__main__']
+
+    for name in sorted(dir(module)):
+        if name.startswith("test_"):
+            func = getattr(module, name)
+
+            print(f"Running test: {name}")
+            func()
+
+    print("All tests passed.")
+
+
+def find_links(filename):
+    with open(filename, "r") as f:
+        for line in f:
+            m = re.findall(r"\[\[(.+?)\]\]", line)
+            for link in m:
+                parts = link.split("|")
+                target = parts[0] if len(parts) == 1 else parts[1]
+                yield target
+
+
+def get_page_name(filename):
+    name = os.path.basename(filename)
+    name = os.path.splitext(name)[0]
+    name = name.replace("-", " ")
+    return name
+
+
+def build_backlinks(filenames):
+    data = {}
+
+    for filename in filenames:
+        for link in find_links(filename):
+            page = get_page_name(filename)
+            existing = data.get(link, set())
+            existing.add(page)
+            data[link] = existing
+
+    return data
+
+
+def main(prog, *args):
+    if not args:
+        print(f"Usage: {prog} <file> [<file> ...]")
+        sys.exit(1)
+
+    if list(args) == ["test"]:
+        run_tests()
+        return
+
+    backlinks = build_backlinks(args)
+
+    for filename in args:
+        page = get_page_name(filename)
+        process_page(filename, backlinks.get(page, set()))
+
+
+if __name__ == "__main__":
+    main(*sys.argv)
