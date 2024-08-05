@@ -18,6 +18,14 @@ inputs:
     description: "Update existing backlinks."
     required: false
     default: true
+  backlinks_header:
+    description: "Override the default backlinks header."
+    required: false
+    default: "## Pages that link here"
+  toc_header:
+    description: "Override the default table of contents header."
+    required: false
+    default: "**Table of Contents:**"
 
 runs:
   using: "composite"
@@ -29,6 +37,7 @@ runs:
       env:
         INPUT_PATH: ${{ inputs.path }}
         ACTION_PATH: ${{ github.action_path }}
+        WIKI_BACKLINKS_HEADER: ${{ inputs.backlinks_header }}
 
     - name: "Update tables of contents"
       run: |
@@ -37,3 +46,4 @@ runs:
       env:
         INPUT_PATH: ${{ inputs.path }}
         ACTION_PATH: ${{ github.action_path }}
+        WIKI_TOC_HEADER: ${{ inputs.toc_header }}
