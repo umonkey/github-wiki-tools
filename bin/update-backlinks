@@ -1,22 +1,25 @@
 #!/usr/bin/env python3
-#
-# Markdown backlinks generator.
-#
-# Reads the specified files, builds a list of from other pages, embeds into the page
-# using placeholder `__BACKLINKS__`.
-#
-# Designed for use with GitHub Actions, for adding what the GitHub wiki is missing.
-#
-# Usage:
-# bin/update-backlinks wiki/*.md
-#
-# To use a custom header:
-# WIKI_BACKLINKS_HEADER="## Pages that link here" bin/update-backlinks wiki/*.md
-#
-# To run tests:
-# bin/update-backlinks test
-#
-# Author: Justin Forest <hex@umonkey.net>
+# pylint: disable=missing-function-docstring,line-too-long,invalid-name
+
+"""
+Markdown backlinks generator.
+
+Reads the specified files, builds a list of from other pages, embeds into the page
+using placeholder `__BACKLINKS__`.
+
+Designed for use with GitHub Actions, for adding what the GitHub wiki is missing.
+
+Usage:
+bin/update-backlinks wiki/*.md
+
+To use a custom header:
+WIKI_BACKLINKS_HEADER="## Pages that link here" bin/update-backlinks wiki/*.md
+
+To run tests:
+bin/update-backlinks test
+
+Author: Justin Forest <hex@umonkey.net>
+"""
 
 import os
 import re
@@ -24,7 +27,7 @@ import sys
 
 
 def get_lines(filename):
-    with open(filename, "r") as f:
+    with open(filename, "r", encoding="utf-8") as f:
         return f.readlines()
 
 
@@ -41,6 +44,8 @@ def render_backlinks(links):
     lines.append("\n")
     lines.append(f"{header}\n")
     lines.append("\n")
+
+    links = sorted(links, key=lambda s: s.lower())
 
     for link in links:
         lines.append(f"- [[{link}]]\n")
@@ -132,8 +137,8 @@ def has_placeholder(lines):
 
 
 def test_has_placeholder():
-    assert True == has_placeholder(["foo\n", "__BACKLINKS__\n"])
-    assert False == has_placeholder(["foo\n", "bar\n"])
+    assert has_placeholder(["foo\n", "__BACKLINKS__\n"])
+    assert not has_placeholder(["foo\n", "bar\n"])
 
 
 def inject_backlinks(lines, parts):
@@ -197,12 +202,10 @@ def process_page(filename, links):
         # print(f"Skipping {filename}: no backlinks placeholder found.")
         return
 
-    links = sorted(links, key=lambda s: s.lower())
-
     block = render_backlinks(links)
     lines = inject_backlinks(lines, block)
 
-    with open(filename, "w") as f:
+    with open(filename, "w", encoding="utf-8") as f:
         f.writelines(lines)
 
     print(f"Updated backlinks in {filename}.")
@@ -222,7 +225,12 @@ def run_tests():
 
 
 def find_links(filename):
-    with open(filename, "r") as f:
+    """
+    Finds all links in the specified file.
+
+    Links are returned in the way they were mentioned, i.e. the case might be wrong.
+    """
+    with open(filename, "r", encoding="utf-8") as f:
         for line in f:
             m = re.findall(r"\[\[(.+?)\]\]", line)
             for link in m:
@@ -238,12 +246,33 @@ def get_page_name(filename):
     return name
 
 
+def get_page_map(filenames):
+    """
+    Returns a map of lowercase page names to their canonical form.
+    """
+    pages = {}
+
+    for filename in filenames:
+        name = get_page_name(filename)
+        key = name.lower()
+
+        pages[key] = name
+
+    return pages
+
+
 def build_backlinks(filenames):
+    pages = get_page_map(filenames)
+
     data = {}
 
     for filename in filenames:
+        page = get_page_name(filename)
+
         for link in find_links(filename):
-            page = get_page_name(filename)
+            # Change the link to its canonical form.
+            link = pages.get(link.lower(), link)
+
             existing = data.get(link, set())
             existing.add(page)
             data[link] = existing
