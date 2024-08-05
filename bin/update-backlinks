@@ -120,7 +120,15 @@ def test_strip_old_block():
 
 
 def has_placeholder(lines):
-    return "__BACKLINKS__\n" in set(lines)
+    lines = set(lines)
+
+    if "__BACKLINKS__\n" in lines:
+        return True
+
+    if "__BACKLINKS__" in lines:
+        return True
+
+    return False
 
 
 def test_has_placeholder():
