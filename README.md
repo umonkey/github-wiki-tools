@@ -10,3 +10,6 @@ Currently implemented features:
 2. Automatic backlinks.
 
 Please [see the wiki](https://github.com/umonkey/github-wiki-tools/wiki) for details on how to use this.
+
+[1]: https://docs.github.com/en/communities/documenting-your-project-with-wikis/about-wikis
+[2]: https://github.com/features/actions
