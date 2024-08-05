@@ -138,6 +138,12 @@ def test_has_placeholder():
 
 def inject_backlinks(lines, parts):
     try:
+        index = lines.index("__BACKLINKS__")
+        lines[index] = "__BACKLINKS__\n"
+    except ValueError:
+        pass
+
+    try:
         index = lines.index("__BACKLINKS__\n")
         lines[index] = "".join(parts)
         return lines
